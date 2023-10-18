@@ -1,6 +1,5 @@
 const express = require('express');
 const User = require('../models/User');
-const Hospitals = require('../models/Hospitaldata');
 const router = express.Router();
 const{body,validationResult} = require('express-validator');
 const bcrypt = require('bcryptjs');
@@ -71,58 +70,6 @@ router.post('/signup' ,[
 //     .catch(err=>{console.log(err)
 // res.json({error:'please enter a unique valid email' , message:err.message})});
 })
-
-
-router.post('/addhospital' ,[
-    body('name','Enter valid name').isLength({min:5}),
-], async (req,res)=>{
-
-    const errors = validationResult(req);
-    let success = false;
-    if(!errors.isEmpty()){
-        return res.status(400).json({errors:errors.array()});
-    }
-
-    try{
-
-        let user = await Hospitals.findOne({name : req.body.name});
-        // let al = false;
-
-
-        if(user){
-            // al = true;
-            return res.status(400).json({errors:errors.array() , message : 'Account already exists'});
-        }
-
-        user =  await Hospitals.create({
-            name : req.body.name,
-        })
-
-
-        const data = {
-            user : {
-                id : user.id
-            }
-        }
-
-        success = true;
-        res.json({success , data});
-    } catch(error){
-        console.log(error.message);
-        res.status(500).send("Some error occured");
-    }
-
-
-//     .then(user => res.json(user))
-//     .catch(err=>{console.log(err)
-// res.json({error:'please enter a unique valid email' , message:err.message})});
-})
-
-
-
-
-
-
 
 
 
