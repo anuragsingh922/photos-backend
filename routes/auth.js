@@ -15,10 +15,10 @@ router.post('/home' , async (req, res)=>{
 
 router.post('/signup' ,[
     body('fname','Enter valid first name').isLength({min:2}),
-    body('lname','Enter valid last name').isLength({min:2}),
+    body('lname','Enter valid last name'),
     body('email','Enter valid email').isEmail(),
     body('password','Enter valid password').isLength({min:5}),
-    body('phone','Enter valid mobile number').isLength({min:10}),
+    body('phone','Enter valid mobile number'),
 ], async (req,res)=>{
 
     const errors = validationResult(req);
@@ -35,7 +35,7 @@ router.post('/signup' ,[
 
         if(user){
             // al = true;
-            return res.status(400).json({errors:errors.array() , message : 'Account already exists'});
+            return res.status(400).json({errors:errors.array() , message : 'Account already exists!'});
         }
 
 

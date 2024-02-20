@@ -10,7 +10,6 @@ const UserSchema = new Schema({
     },
     lname:{
         type:String,
-        required : true
     },
     email:{
         type : String,
@@ -22,7 +21,6 @@ const UserSchema = new Schema({
     },
     number:{
         type : Number,
-        required : true,
     },
     date:{
         type:Date,

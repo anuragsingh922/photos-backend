@@ -5,9 +5,10 @@ const fetchuser = require('../middleware/fetchuser');
 const multer = require('multer');
 const path = require('path');
 
-router.get('/getphotos', async (req, res) => {
+router.post('/getphotos', async (req, res) => {
+  console.log("Called");
     try {
-        const email = req.query.email;
+        const email = req.body.email;
 
         console.log("Email: " + email);
 
