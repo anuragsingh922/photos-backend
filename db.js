@@ -1,10 +1,11 @@
-const mongoose = require('mongoose');
-const mongoURI = "mongodb+srv://anuragjadu922:903BGnHp9ZdWz9h4@iitr-hackathon.wnk05ph.mongodb.net/";
+const mongoose = require("mongoose");
+require("dotenv").config({ path: "./config.env" });
+const mongoURI = process.env.DATABASEURI;
 
-const conecttomongo = () =>{
-    mongoose.connect(mongoURI , ()=>{
-        console.log("Connected to mongo successfully");
-    })
-}
+const conecttomongo = () => {
+  mongoose.connect(mongoURI, () => {
+    console.log("Connected to mongo successfully");
+  });
+};
 
 module.exports = conecttomongo;

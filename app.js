@@ -3,9 +3,6 @@ const express = require('express')
 connecttomongo();
 const cors = require("cors");
 const bodyParser = require("body-parser");
-const path = require('path');
-
-require("dotenv").config({ path: "./config.env" });
 
 
 const app = express();
@@ -20,10 +17,11 @@ app.use(express.json());
 app.get("/", (req, res) => {
   res.send("Transcribe server is running... ");
 });
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// app.use('/uploads' , express.static(path.join(__dirname, 'uploads')));
 
 app.use('/api/auth' , require('./routes/auth'));
-app.use('/api/photos' , require('./routes/photos'));
+// app.use('/api/photos' , require('./routes/photos'));
+app.use('/api/files' , require('./routes/gridfsRoutes'));
 
 app.listen(port, () => {
   console.log(`App listening on port http://localhost:${port}`)
