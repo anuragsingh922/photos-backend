@@ -18,7 +18,7 @@ router.get("/", async (req, res) => {
     const images_res = await Image.find({ email }).sort({date : -1});
     console.log("Database: ", images_res);
 
-    res.send(images_res); // Sending JSON response with the retrieved images
+    res.status(200).send(images_res); // Sending JSON response with the retrieved images
   } catch (err) {
     console.log("Error: ", err);
     res.status(500).send(err); // Sending error response
