@@ -101,7 +101,7 @@ const getAllFiles = async (req, res) => {
     // Find all files associated with the specified email
     const files = await db
       .collection("fs.files")
-      .find({ "metadata.email": email })
+      .find({ "metadata.email": email }).sort({uploadDate : -1})
       .toArray();
 
     console.log("Database res : ", files);
@@ -112,46 +112,80 @@ const getAllFiles = async (req, res) => {
         .json({ success: false, message: "No files found for this email" });
     }
 
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Transfer-Encoding", "chunked");
+
+    for (let file of files) {
+      const fileId = file._id;
+      const downloadStream = bucket.openDownloadStream(fileId);
+      let buffer = Buffer.alloc(0);
+      downloadStream.on("data", (chunk) => {
+        buffer = Buffer.concat([buffer, chunk]);
+      });
+
+      downloadStream.on("end", () => {
+        const fileData = {
+          filename: file.filename,
+          contentType: file.metadata.contentType,
+          data: buffer.toString("base64"), // Encode file data as Base64 string
+        };
+        console.log(fileData);
+
+        res.write(JSON.stringify(fileData) + "\n");
+      });
+
+      downloadStream.on("error", (error) => {
+        console.error("Error reading file:", error);
+        res.write(JSON.stringify({ success: false, message: "Error reading file" }) + "\n");
+      });
+
+      await new Promise((resolve) => downloadStream.on("end", resolve));
+    }
+
     // Read the content of each file into a buffer
-    const filePromises = files.map(
-      (file) =>
-        new Promise((resolve, reject) => {
-          const fileId = file._id;
-          const downloadStream = bucket.openDownloadStream(fileId);
+    // const filePromises = files.map(
+    //   (file) =>
+    //     new Promise((resolve, reject) => {
+    //       const fileId = file._id;
+    //       const downloadStream = bucket.openDownloadStream(fileId);
 
-          let buffer = Buffer.alloc(0);
+    //       let buffer = Buffer.alloc(0);
 
-          downloadStream.on("data", (chunk) => {
-            buffer = Buffer.concat([buffer, chunk]);
-          });
+    //       downloadStream.on("data", (chunk) => {
+    //         buffer = Buffer.concat([buffer, chunk]);
+    //       });
 
-          downloadStream.on("end", () => {
-            resolve({
-              filename: file.filename,
-              contentType: file.metadata.contentType,
-              data: buffer.toString("base64"), // Encode file data as Base64 string
-            });
-          });
+    //       downloadStream.on("end", () => {
+    //         resolve({
+    //           filename: file.filename,
+    //           contentType: file.metadata.contentType,
+    //           data: buffer.toString("base64"), // Encode file data as Base64 string
+    //         });
+    //       });
 
-          downloadStream.on("error", (error) => {
-            console.error("Error reading file:", error);
-            reject(error);
-          });
-        })
-    );
+    //       downloadStream.on("error", (error) => {
+    //         console.error("Error reading file:", error);
+    //         reject(error);
+    //       });
+    //     })
+    // );
 
-    const fileData = await Promise.all(filePromises);
+    // const fileData = await Promise.all(filePromises);
 
-    console.log("FileData : ", fileData);
+    // console.log("FileData : ", filesWithData);
 
-    res.status(200).json({
-      success: true,
-      message: `Found ${fileData.length} file(s) associated with this email.`,
-      files: fileData,
-    });
+    // res.status(200).json({
+    //   success: true,
+    //   message: `Found ${filesWithData.length} file(s) associated with this email.`,
+    //   files: filesWithData,
+    // });
+
+    res.end();
   } catch (error) {
     console.error("Error retrieving files:", error);
+    // res.status(500).json({ success: false, message: "Internal Server Error" });
     res.status(500).json({ success: false, message: "Internal Server Error" });
+    res.end();
   } finally {
     client.close();
   }

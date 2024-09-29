@@ -8,8 +8,19 @@ const UserSchema = new Schema({
         type : String,
         required : true,
     },
-    filename: String,
-    filepath: String,
+    filename: {
+        type : String,
+        required : true,
+        // unique : true,
+    },
+    filepath: {
+        type : String,
+        required : true,
+    },
+    type : {
+        type : String,
+        required : true,
+    },
     date:{
         type:Date,
         default : Date.now 
