@@ -53,4 +53,17 @@ router.post("/", upload.single("file"), async (req, res) => {
   }
 });
 
+
+router.post("/delete", async (req, res) => {
+  try {
+    console.log(JSON.stringify(req.body));
+    const {id} = req.body;
+    await Image.findByIdAndDelete(id);
+    res.send("Image deleted successfully");
+  } catch (error) {
+    res.status(500).send("Error uploading image");
+    console.log("error ", error);
+  }
+});
+
 module.exports = router;
