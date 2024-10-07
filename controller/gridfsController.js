@@ -34,6 +34,24 @@ const uploadFile = async (req, res) => {
       metadata: { contentType: req.file.mimetype, email: email },
     });
 
+    let uploadedBytes = 0;
+    const totalBytes = req.file.size;
+
+    console.log(`Total file size: ${totalBytes} bytes`);
+
+    // Listen for 'data' event to track chunks being read from readableStream and written to the uploadStream
+    readableStream.on("data", (chunk) => {
+      uploadedBytes += chunk.length;
+      const progress = (uploadedBytes / totalBytes) * 100;
+      console.log(`Read Progress: ${progress.toFixed(2)}%`);
+    });
+
+    // Track the upload progress while data is being written to the GridFS upload stream
+    uploadStream.on("drain", () => {
+      const progress = (uploadedBytes / totalBytes) * 100;
+      console.log(`Upload Progress: ${progress.toFixed(2)}%`);
+    });
+
     readableStream
       .pipe(uploadStream)
       .on("error", (error) => {
@@ -59,41 +77,8 @@ const uploadFile = async (req, res) => {
   }
 };
 
-const uploadVideo = async (req, res) => {
-  const user = req.user;
-
-  const client = await MongoClient.connect(database_uri);
-  const db = client.db("askfluence");
-  const bucket = new GridFSBucket(db);
-
-  const filePath = path.join(__dirname, "1727444231129.png");
-
-  //   const data = fs.readFileSync(filePath , "utf-8");
-  //   console.log(data);
-  //   return res.status(200).send(data);
-
-  // Create a readable stream from the file
-  const uploadStream = bucket.openUploadStream(filePath);
-
-  // Pipe the file into the GridFS bucket
-  fs.createReadStream(filePath)
-    .pipe(uploadStream)
-    .on("error", (error) => {
-      console.error("Error uploading file:", error);
-    })
-    .on("finish", () => {
-      console.log("File uploaded successfully");
-      client.close();
-      return res.status(200).json({
-        success: true,
-        message: "File Saved Successfully.",
-      });
-    });
-};
-
 const getAllFiles = async (req, res) => {
   const email = req.user;
-  console.log("Email : ", email);
 
   const client = await MongoClient.connect(databaseuri);
   const db = client.db("test");
@@ -194,75 +179,6 @@ const getAllFiles = async (req, res) => {
   }
 };
 
-const getAllFiles2 = async (req, res) => {
-  const email = req.user;
-  console.log("Email : ", email);
-
-  const client = await MongoClient.connect(databaseuri);
-  const db = client.db("test");
-  const bucket = new GridFSBucket(db);
-
-  try {
-    // Find all files associated with the specified email
-    const files = await db
-      .collection("fs.files")
-      .find({ "metadata.email": email })
-      .toArray();
-
-    if (!files || files.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "No files found for this email",
-      });
-    }
-
-    // Set up the response headers for JSON streaming
-    res.setHeader("Content-Type", "application/json");
-
-    // Use an async function to handle each file separately
-    for (const file of files) {
-      const fileId = file._id;
-      const downloadStream = bucket.openDownloadStream(fileId);
-
-      let base64Data = "";
-
-      // This returns a promise that resolves once the file has finished downloading
-      await new Promise((resolve, reject) => {
-        downloadStream.on("data", (chunk) => {
-          base64Data += chunk.toString("base64");
-        });
-
-        downloadStream.on("end", () => {
-          // Write file metadata along with the Base64 data
-          const fileData = JSON.stringify({
-            filename: file.filename,
-            contentType: file.metadata.contentType,
-            data: base64Data,
-          });
-
-          res.write(fileData);
-          resolve(); // Resolve the promise when this file's download is complete
-        });
-
-        downloadStream.on("error", (error) => {
-          console.error("Error reading file:", error);
-          reject(error); // Reject the promise in case of an error
-        });
-      });
-
-      base64Data = ""; // Clear the buffer for the next file
-      isFirstFile = false;
-    }
-
-    res.end();
-  } catch (error) {
-    console.error("Error retrieving files:", error);
-    res.status(500).json({ success: false, message: "Internal Server Error" });
-  } finally {
-    client.close();
-  }
-};
-
 const deleteFile = async (req, res) => {
   try {
     const client = await MongoClient.connect(databaseuri);
@@ -278,7 +194,9 @@ const deleteFile = async (req, res) => {
     // If fileExists is null, it means the file has been successfully deleted
     if (!fileExists) {
       console.log("File deletion confirmed.");
-      return res.status(200).json({ success: true, message: "File deleted and confirmed." });
+      return res
+        .status(200)
+        .json({ success: true, message: "File deleted and confirmed." });
     } else {
       console.log("File still exists after deletion attempt.");
       return res.status(400).json({

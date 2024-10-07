@@ -4,23 +4,18 @@ const { Schema } = mongoose;
 mongoose.set('strictQuery', true);
 
 const UserSchema = new Schema({
-    fname:{
+    name:{
         type:String,
         required : true
-    },
-    lname:{
-        type:String,
     },
     email:{
         type : String,
         required : true,
+        unique : true,
     },
     password:{
         type : String,
         required : true,
-    },
-    number:{
-        type : Number,
     },
     date:{
         type:Date,
@@ -29,5 +24,5 @@ const UserSchema = new Schema({
 })
 
 const User = mongoose.model('users',UserSchema);
-User.createIndexes();
+User.createIndexes({email : 1});
 module.exports = User;

@@ -4,7 +4,6 @@ const jwt_str = "Anuragisgoodb$oy";
 const fetchuser = (req, res, next) => {
   const token = req.header("Authorization").split("Bearer ")[1];
   if (!token) {
-    console.log("Token Not present.");
     res.status(401).send({ error: "Please enter valid details" });
   } else {
     try {

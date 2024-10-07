@@ -15,17 +15,15 @@ router.post("/home", async (req, res) => {
 router.post(
   "/signup",
   [
-    body("fname", "Enter valid first name").isLength({ min: 2 }),
-    body("lname", "Enter valid last name"),
+    body("name", "Enter valid name"),
     body("email", "Enter valid email").isEmail(),
     body("password", "Enter valid password").isLength({ min: 5 }),
-    body("phone", "Enter valid mobile number"),
   ],
   async (req, res) => {
     const errors = validationResult(req);
     let success = false;
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({ success : false, msg: errors.array() });
     }
 
     try {
@@ -36,18 +34,16 @@ router.post(
         // al = true;
         return res
           .status(400)
-          .json({ errors: errors.array(), message: "Account already exists!" });
+          .json({ success : false, msg: "Account already exist." });
       }
 
       const salt = await bcrypt.genSalt(10);
       const secpass = await bcrypt.hash(req.body.password, salt);
 
       user = await User.create({
-        fname: req.body.fname,
-        lname: req.body.lname,
+        name: req.body.name,
         email: req.body.email,
         password: secpass,
-        number: req.body.phone,
       });
 
       console.log(user);
@@ -57,7 +53,7 @@ router.post(
       res.json({ success, authtoken });
     } catch (error) {
       console.log(error.message);
-      res.status(500).send("Some error occured");
+      res.status(500).json({success : false , msg : "Please try after some time."});
     }
 
     //     .then(user => res.json(user))
