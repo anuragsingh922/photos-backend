@@ -18,9 +18,10 @@ const storage = multer.memoryStorage();
 
 const upload = multer({ storage: storage });
 
-const { uploadFile, getAllFiles } = require("../controller/gridfsController");
+const { uploadFile, getAllFiles , deleteFile } = require("../controller/gridfsController");
 
 router.post("/", upload.single("file") , uploadFile);
+router.post("/delete" , deleteFile);
 router.get("/" , getAllFiles);
 
 module.exports = router;

@@ -1,4 +1,4 @@
-const { MongoClient, GridFSBucket } = require("mongodb");
+const { MongoClient, GridFSBucket, ObjectId } = require("mongodb");
 const fs = require("fs");
 const { databaseuri } = require("../config");
 const path = require("path");
@@ -6,6 +6,7 @@ const { Readable } = require("stream");
 
 const uploadFile = async (req, res) => {
   if (!req.file) {
+    console.log("File not present");
     return res
       .status(400)
       .json({ success: false, message: "No file uploaded" });
@@ -101,10 +102,9 @@ const getAllFiles = async (req, res) => {
     // Find all files associated with the specified email
     const files = await db
       .collection("fs.files")
-      .find({ "metadata.email": email }).sort({uploadDate : -1})
+      .find({ "metadata.email": email })
+      .sort({ uploadDate: -1 })
       .toArray();
-
-    console.log("Database res : ", files);
 
     if (!files || files.length === 0) {
       return res
@@ -125,18 +125,21 @@ const getAllFiles = async (req, res) => {
 
       downloadStream.on("end", () => {
         const fileData = {
+          _id: file._id,
           filename: file.filename,
           contentType: file.metadata.contentType,
           data: buffer.toString("base64"), // Encode file data as Base64 string
         };
-        console.log(fileData);
 
         res.write(JSON.stringify(fileData) + "\n");
       });
 
       downloadStream.on("error", (error) => {
         console.error("Error reading file:", error);
-        res.write(JSON.stringify({ success: false, message: "Error reading file" }) + "\n");
+        res.write(
+          JSON.stringify({ success: false, message: "Error reading file" }) +
+            "\n"
+        );
       });
 
       await new Promise((resolve) => downloadStream.on("end", resolve));
@@ -260,4 +263,33 @@ const getAllFiles2 = async (req, res) => {
   }
 };
 
-module.exports = { uploadFile, getAllFiles };
+const deleteFile = async (req, res) => {
+  try {
+    const client = await MongoClient.connect(databaseuri);
+    const db = client.db("test");
+    const bucket = new GridFSBucket(db);
+    const { id } = req.body;
+    await bucket.delete(new ObjectId(id));
+
+    const fileExists = await db
+      .collection("fs.files")
+      .findOne({ _id: new ObjectId(id) });
+
+    // If fileExists is null, it means the file has been successfully deleted
+    if (!fileExists) {
+      console.log("File deletion confirmed.");
+      return res.status(200).json({ success: true, message: "File deleted and confirmed." });
+    } else {
+      console.log("File still exists after deletion attempt.");
+      return res.status(400).json({
+        success: false,
+        message: "File still exists after deletion attempt.",
+      });
+    }
+  } catch (error) {
+    console.log("Error in delete file : ", error);
+    res.status(200).json({ success: false });
+  }
+};
+
+module.exports = { uploadFile, getAllFiles, deleteFile };
